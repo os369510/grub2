@@ -1807,10 +1807,15 @@ module = {
   ia64_efi = loader/ia64/efi/linux.c;
   arm_coreboot = loader/arm/linux.c;
   arm_efi = loader/efi/linux.c;
+  arm_efi = loader/efi/linux_sb.c;
   arm_uboot = loader/arm/linux.c;
   arm64 = loader/efi/linux.c;
+  arm64 = loader/efi/linux_sb.c;
   riscv32 = loader/efi/linux.c;
+  riscv32 = loader/efi/linux_sb.c;
   riscv64 = loader/efi/linux.c;
+  riscv64 = loader/efi/linux_sb.c;
+  cflags = '-Wno-error=cast-align';
   common = loader/linux.c;
   common = lib/cmdline.c;
   enable = noemu;
@@ -1819,7 +1824,7 @@ module = {
 module = {
   name = fdt;
   efi = loader/efi/fdt.c;
-  common = lib/fdt.c;
+  fdt = lib/fdt.c;
   enable = fdt;
 };
 
@@ -1875,11 +1880,21 @@ module = {
 };
 
 module = {
+  name = linuxefi;
+  efi = loader/i386/efi/linux.c;
+  efi = loader/efi/linux_sb.c;
+  cflags = '-Wno-error=cast-align';
+  enable = i386_efi;
+  enable = x86_64_efi;
+};
+
+module = {
   name = chain;
   efi = loader/efi/chainloader.c;
   i386_pc = loader/i386/pc/chainloader.c;
   i386_coreboot = loader/i386/coreboot/chainloader.c;
   i386_coreboot = lib/LzmaDec.c;
+  cflags = '-Wno-error=cast-align';
   enable = i386_pc;
   enable = i386_coreboot;
   enable = efi;

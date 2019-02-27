@@ -27,6 +27,7 @@
 #include <grub/types.h>
 #include <grub/cpu/linux.h>
 #include <grub/efi/efi.h>
+#include <grub/efi/linux.h>
 #include <grub/efi/fdtload.h>
 #include <grub/efi/memory.h>
 #include <grub/efi/pe32.h>
@@ -53,6 +54,13 @@ static grub_efi_handle_t initrd_lf2_handle;
 static int initrd_use_loadfile2;
 static grub_efi_guid_t load_file2_guid = GRUB_EFI_LOAD_FILE2_PROTOCOL_GUID;
 static grub_efi_guid_t device_path_guid = GRUB_EFI_DEVICE_PATH_GUID;
+
+struct grub_arm64_linux_pe_header
+{
+  grub_uint32_t magic;
+  struct grub_pe32_coff_header coff;
+  struct grub_pe64_optional_header opt;
+};
 
 grub_err_t
 grub_arch_efi_linux_check_image (struct linux_arch_kernel_header * lh)
@@ -404,6 +412,7 @@ grub_cmd_linux (grub_command_t cmd __attribute__ ((unused)),
   grub_file_t file = 0;
   struct linux_arch_kernel_header lh;
   grub_err_t err;
+  int rc;
 
   grub_dl_ref (my_mod);
 
@@ -447,6 +456,13 @@ grub_cmd_linux (grub_command_t cmd __attribute__ ((unused)),
     }
 
   grub_dprintf ("linux", "kernel @ %p\n", kernel_addr);
+
+  rc = grub_linuxefi_secure_validate (kernel_addr, kernel_size);
+  if (rc < 0)
+    {
+      grub_error (GRUB_ERR_INVALID_COMMAND, N_("%s has invalid signature"), argv[0]);
+      goto fail;
+    }
 
   cmdline_size = grub_loader_cmdline_size (argc, argv) + sizeof (LINUX_IMAGE);
   linux_args = grub_malloc (cmdline_size);
