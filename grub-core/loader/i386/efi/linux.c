@@ -36,10 +36,15 @@ static grub_dl_t my_mod;
 static int loaded;
 static void *kernel_mem;
 static grub_uint64_t kernel_size;
-static grub_uint8_t *initrd_mem;
+static void *initrd_mem;
 static grub_uint32_t handover_offset;
 struct linux_kernel_params *params;
 static char *linux_cmdline;
+
+#define MIN(a, b) \
+  ({ typeof (a) _a = (a); \
+     typeof (b) _b = (b); \
+     _a < _b ? _a : _b; })
 
 #define BYTES_TO_PAGES(bytes)   (((bytes) + 0xfff) >> 12)
 
@@ -236,7 +241,7 @@ grub_cmd_initrd (grub_command_t cmd __attribute__ ((unused)),
   for (i = 0; i < nfiles; i++)
     {
       grub_ssize_t cursize = grub_file_size (files[i]);
-      if (grub_file_read (files[i], ptr, cursize) != cursize)
+      if (read (files[i], ptr, cursize) != cursize)
         {
           if (!grub_errno)
             grub_error (GRUB_ERR_FILE_READ_ERROR, N_("premature end of file %s"),
@@ -261,11 +266,6 @@ grub_cmd_initrd (grub_command_t cmd __attribute__ ((unused)),
 
   return grub_errno;
 }
-
-#define MIN(a, b) \
-  ({ typeof (a) _a = (a); \
-     typeof (b) _b = (b); \
-     _a < _b ? _a : _b; })
 
 static grub_err_t
 grub_cmd_linux (grub_command_t cmd __attribute__ ((unused)),
