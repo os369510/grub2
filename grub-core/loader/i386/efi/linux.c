@@ -100,7 +100,7 @@ kernel_alloc(grub_efi_uintn_t size, const char * const errmsg)
 
       pages = BYTES_TO_PAGES(size);
       grub_dprintf ("linuxefi", "Trying to allocate %lu pages from %p\n",
-		    pages, (void *)max);
+		    (unsigned long)pages, (void *)(unsigned long)max);
 
       prev_max = max;
       addr = grub_efi_allocate_pages_real (max, pages,
@@ -376,6 +376,7 @@ grub_cmd_linux (grub_command_t cmd __attribute__ ((unused)),
 
   setup_header_end_offset = *((grub_uint8_t *)kernel + 0x201);
   grub_dprintf ("linuxefi", "copying %lu bytes from %p to %p\n",
+		(unsigned long)
 		MIN((grub_size_t)0x202+setup_header_end_offset,
 		    sizeof (*params)) - 0x1f1,
 		(grub_uint8_t *)kernel + 0x1f1,
