@@ -1048,8 +1048,8 @@ for LOGSECSIZE in $(range "$MINLOGSECSIZE" "$MAXLOGSECSIZE" 1); do
 		x"romfs")
 		    genromfs -V "$FSLABEL" -f "${FSIMAGEP}0.img" -d "$MASTER" ;;
 		xsquash4_*)
-		    echo mksquashfs "$MASTER" "${FSIMAGEP}0.img" -always-use-fragments -comp "${fs/squash4_/}" -b $BLKSIZE
-		    mksquashfs "$MASTER" "${FSIMAGEP}0.img" -always-use-fragments -comp "${fs/squash4_/}" -b $BLKSIZE ;;
+		    echo mksquashfs "$MASTER" "${FSIMAGEP}0.img" -always-use-fragments -comp "${fs/squash4_/}" -b $BLKSIZE -not-reproducible
+		    mksquashfs "$MASTER" "${FSIMAGEP}0.img" -always-use-fragments -comp "${fs/squash4_/}" -b $BLKSIZE -not-reproducible ;;
 		x"bfs")
 		    sleep 1
 		    fusermount -u "$MNTPOINTRW"
