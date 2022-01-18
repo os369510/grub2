@@ -190,7 +190,29 @@ grub_arch_efi_linux_boot_image (grub_addr_t addr __attribute__((unused)),
 
   grub_dprintf ("linux", "linux command line: '%s'\n", args);
 
-  retval = grub_efi_linux_boot (kernel_addr, handover_offset, kernel_addr);
+/*
+ * FIXME:
+ *
+ * We know that grub_efi_linux_boot() is broken:
+ *
+ * - The entry point address is not correctly determined.
+ * - Section addresses are ignored.
+ * - Sections having a raw size that is smaller than the virtual size are not
+ *   filled up with zeros.
+ * - Relocations are ignored.
+ * - Binaries calling Exit() quit GRUB.
+ *
+ * Thus we expect kernels to fail badly.
+ *
+ * Yet reviewers suggested to only change the code path for RISC-V until a
+ * security audit of the code in grub_efi_run_image() is completed.
+ */
+#ifndef __riscv
+  if (grub_efi_get_secureboot() == GRUB_EFI_SECUREBOOT_MODE_ENABLED)
+      retval = grub_efi_linux_boot (kernel_addr, handover_offset, kernel_addr);
+  else
+#endif
+  retval = grub_efi_run_image (kernel_addr, kernel_size, linux_args);
 
   /* When successful, not reached */
   free_params();
