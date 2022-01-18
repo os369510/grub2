@@ -27,5 +27,8 @@ EXPORT_FUNC(grub_linuxefi_secure_validate) (void *data, grub_uint32_t size);
 grub_err_t
 EXPORT_FUNC(grub_efi_linux_boot) (void *kernel_address, grub_off_t offset,
 				  void *kernel_param);
+grub_efi_boolean_t
+EXPORT_FUNC(grub_efi_run_image) (void *data, grub_efi_uint32_t data_size,
+				 const char *args);
 
 #endif /* ! GRUB_EFI_LINUX_HEADER */
