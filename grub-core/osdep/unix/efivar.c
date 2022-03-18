@@ -38,7 +38,10 @@
 #include <grub/misc.h>
 #include <grub/emu/exec.h>
 #include <grub/emu/getroot.h>
+#include <linux/magic.h>
 #include <sys/types.h>
+#include <sys/vfs.h>
+#include <sys/statvfs.h>
 #include <ctype.h>
 #include <errno.h>
 #include <stdbool.h>
@@ -511,6 +514,29 @@ devices_equal (const_efidp a, const_efidp b)
   return false;
 }
 
+/**
+ * efivar_is_rw - detect if the efivar file system exists and is writeable
+ *
+ * Return:	true if efivarfs is writeable
+ */
+static bool
+efivar_is_rw (void)
+{
+  int ret;
+  const char *mount = "/sys/firmware/efi/efivars";
+  struct statfs stat;
+
+  ret = statfs(mount, &stat);
+  if (ret == -1)
+    return false;
+  if (stat.f_type != EFIVARFS_MAGIC)
+      return false;
+  if (stat.f_flags & ST_RDONLY)
+    return false;
+
+  return true;
+}
+
 int
 grub_install_efivar_register_efi (grub_device_t efidir_grub_dev,
 				  const char *efidir, const char *efifile_path,
@@ -527,6 +553,14 @@ grub_install_efivar_register_efi (grub_device_t efidir_grub_dev,
   size_t n_alt_nums = 0;
   int rc;
   bool is_boot_efi;
+
+  /* Check if EFI variable can be written */
+  if (!efivar_is_rw ())
+    {
+      grub_util_warn ("EFI variables cannot be set on this system");
+      grub_util_warn ("You will have to complete the GRUB setup manually");
+      return 0;
+    }
 
   is_boot_efi = strstr (efidir, "/boot/efi") != NULL;
   efidir_disk = grub_util_biosdisk_get_osdev (efidir_grub_dev->disk);
