@@ -126,3 +126,7 @@ linuxefi-do-not-validate-kernels-twice.patch
 fdt-add-debug-output-to-devicetree-command.patch
 efi-EFI-Device-Tree-Fixup-Protocol.patch
 ubuntu-disable-LOAD-FILE2-protocol-for-initrd-on-ARM.patch
+0129-x86-efi-Use-bounce-buffers-for-reading-to-addresses-.patch
+0130-x86-efi-Re-arrange-grub_cmd_linux-a-little-bit.patch
+0131-x86-efi-Make-our-own-allocator-for-kernel-stuff.patch
+0132-x86-efi-Allow-initrd-params-cmdline-allocations-abov.patch
