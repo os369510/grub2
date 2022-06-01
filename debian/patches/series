@@ -130,3 +130,7 @@ ubuntu-disable-LOAD-FILE2-protocol-for-initrd-on-ARM.patch
 0130-x86-efi-Re-arrange-grub_cmd_linux-a-little-bit.patch
 0131-x86-efi-Make-our-own-allocator-for-kernel-stuff.patch
 0132-x86-efi-Allow-initrd-params-cmdline-allocations-abov.patch
+0133-Try-to-pick-better-locations-for-kernel-and-initrd.patch
+0134-Fix-build-fail.patch
+0135-Don-t-use-Wno-sign-compare-Wno-conversion-Wno-error-.patch
+0136-Fix-build-error.patch

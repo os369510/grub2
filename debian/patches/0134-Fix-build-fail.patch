@@ -1,0 +1,52 @@
+From: Jeremy Su <os369510@gmail.com>
+Date: Wed, 1 Jun 2022 22:52:09 +0800
+Subject: Fix build fail
+
+---
+ grub-core/loader/i386/efi/linux.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/grub-core/loader/i386/efi/linux.c b/grub-core/loader/i386/efi/linux.c
+index e7c7fd5..1ed8b33 100644
+--- a/grub-core/loader/i386/efi/linux.c
++++ b/grub-core/loader/i386/efi/linux.c
+@@ -98,7 +98,7 @@ kernel_alloc(grub_efi_uintn_t size, const char * const errmsg)
+ 	continue;
+ 
+       pages = BYTES_TO_PAGES(size);
+-      grub_dprintf ("linux", "Trying to allocate %lu pages from %p\n",
++      grub_dprintf ("linux", "Trying to allocate %u pages from %p\n",
+ 		    pages, (void *)max);
+ 
+       prev_max = max;
+@@ -313,11 +313,12 @@ grub_cmd_linux (grub_command_t cmd __attribute__ ((unused)),
+       goto fail;
+     }
+ 
++  int rc;
+   rc = grub_linuxefi_secure_validate (kernel, filelen);
+   if (rc < 0)
+     {
+       grub_error (GRUB_ERR_INVALID_COMMAND, N_("%s has invalid signature"),
+-		  argv[0]);
++                 argv[0]);
+       goto fail;
+     }
+ 
+@@ -385,6 +386,7 @@ grub_cmd_linux (grub_command_t cmd __attribute__ ((unused)),
+   if (!linux_cmdline)
+     linux_cmdline = grub_efi_allocate_pages_max(GRUB_EFI_MAX_USABLE_ADDRESS,
+ 						BYTES_TO_PAGES(lh->cmdline_size + 1));
++#if defined(__x86_64__)
+   if (!linux_cmdline)
+     {
+       grub_dprintf ("linux", "Loading kernel above 4GB is supported; enabling.\n");
+@@ -404,7 +406,7 @@ grub_cmd_linux (grub_command_t cmd __attribute__ ((unused)),
+   grub_memset (params, 0, sizeof(*params));
+ 
+   setup_header_end_offset = *((grub_uint8_t *)kernel + 0x201);
+-  grub_dprintf ("linux", "copying %lu bytes from %p to %p\n",
++  grub_dprintf ("linux", "copying %u bytes from %p to %p\n",
+ 		MIN((grub_size_t)0x202+setup_header_end_offset,
+ 		    sizeof (*params)) - 0x1f1,
+ 		(grub_uint8_t *)kernel + 0x1f1,
