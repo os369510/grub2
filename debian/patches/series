@@ -135,3 +135,4 @@ ubuntu-disable-LOAD-FILE2-protocol-for-initrd-on-ARM.patch
 0135-Don-t-use-Wno-sign-compare-Wno-conversion-Wno-error-.patch
 0136-Fix-build-error.patch
 0137-Include-a-.h-for-grub_add.patch
+0138-remove-grub_linuxefi_secure_validate.patch
