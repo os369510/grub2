@@ -386,7 +386,7 @@ grub_lexer_unput (const char *text, yyscan_t yyscanner)
   lexerstate->prefix = grub_strdup (text);
   if (! lexerstate->prefix)
     {
-      grub_script_yyerror (yyget_extra (yyscanner), N_("out of memory"));
+      grub_script_yyerror (yyget_extra (yyscanner), N_("out of memory,script/yylex.l:grub_lexer_unput:389"));
       return 1;
     }
   return 0;

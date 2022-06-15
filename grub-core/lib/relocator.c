@@ -1279,7 +1279,7 @@ grub_relocator_alloc_chunk_addr (struct grub_relocator *rel,
 
       grub_dprintf ("relocator", "not allocated\n");
       grub_free (chunk);
-      return grub_error (GRUB_ERR_OUT_OF_MEMORY, N_("out of memory"));
+      return grub_error (GRUB_ERR_OUT_OF_MEMORY, N_("out of memory, lib/relocator:grub_relocator_alloc_chunk_addr():1282"));
     }
   while (0);
 
@@ -1436,7 +1436,7 @@ grub_relocator_alloc_chunk_align (struct grub_relocator *rel,
 	  break;
 	}
 
-      return grub_error (GRUB_ERR_OUT_OF_MEMORY, N_("out of memory"));
+      return grub_error (GRUB_ERR_OUT_OF_MEMORY, N_("out of memory,lib/relocator.c:grub_relocator_alloc_chunk_align:1439"));
     }
   while (0);
 
@@ -1534,8 +1534,9 @@ grub_relocator_prepare_relocs (struct grub_relocator *rel, grub_addr_t addr,
 
   if (!malloc_in_range (rel, 0, ~(grub_addr_t)0 - rel->relocators_size + 1,
 			grub_relocator_align,
-			rel->relocators_size, &movers_chunk, 1, 1))
-    return grub_error (GRUB_ERR_OUT_OF_MEMORY, N_("out of memory"));
+			rel->relocators_size, &movers_chunk, 1, 1)){
+    return grub_error (GRUB_ERR_OUT_OF_MEMORY, N_("out of memory, lib/relocator.c:grub_relocator_prepare_relocs:1538"));
+  }
   movers_chunk.srcv = rels = rels0
     = grub_map_memory (movers_chunk.src, movers_chunk.size);
 

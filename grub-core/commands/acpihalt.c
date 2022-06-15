@@ -365,6 +365,7 @@ main (int argc, char **argv)
   buf = malloc (len);
   if (!buf)
     {
+      printf (_("error: acpihalt.c:main():368.\n"));
       printf (_("error: %s.\n"), _("out of memory"));
       fclose (f);
       return 2;

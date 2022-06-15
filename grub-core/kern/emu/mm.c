@@ -31,7 +31,7 @@ grub_calloc (grub_size_t nmemb, grub_size_t size)
   void *ret;
   ret = calloc (nmemb, size);
   if (!ret)
-    grub_error (GRUB_ERR_OUT_OF_MEMORY, N_("out of memory"));
+    grub_error (GRUB_ERR_OUT_OF_MEMORY, N_("out of memory,k/e/m:grub_calloc:34"));
   return ret;
 }
 
@@ -41,7 +41,7 @@ grub_malloc (grub_size_t size)
   void *ret;
   ret = malloc (size);
   if (!ret)
-    grub_error (GRUB_ERR_OUT_OF_MEMORY, N_("out of memory"));
+    grub_error (GRUB_ERR_OUT_OF_MEMORY, N_("out of memory,k/e/m:grub_malloc:44"));
   return ret;
 }
 
@@ -70,6 +70,6 @@ grub_realloc (void *ptr, grub_size_t size)
   void *ret;
   ret = realloc (ptr, size);
   if (!ret)
-    grub_error (GRUB_ERR_OUT_OF_MEMORY, N_("out of memory"));
+    grub_error (GRUB_ERR_OUT_OF_MEMORY, N_("out of memory,k/e/m:grub_realloc:73"));
   return ret;
 }

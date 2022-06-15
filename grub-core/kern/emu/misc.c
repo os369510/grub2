@@ -92,7 +92,7 @@ xcalloc (grub_size_t nmemb, grub_size_t size)
 
   p = calloc (nmemb, size);
   if (!p)
-    grub_util_error ("%s", _("out of memory"));
+    grub_util_error ("%s", _("out of memory, k/e/m:xcalloc:95"));
 
   return p;
 }
@@ -104,7 +104,7 @@ xmalloc (grub_size_t size)
 
   p = malloc (size);
   if (! p)
-    grub_util_error ("%s", _("out of memory"));
+    grub_util_error ("%s", _("out of memory,k/e/m:xmalloc:107"));
 
   return p;
 }
@@ -114,7 +114,7 @@ xrealloc (void *ptr, grub_size_t size)
 {
   ptr = realloc (ptr, size);
   if (! ptr)
-    grub_util_error ("%s", _("out of memory"));
+    grub_util_error ("%s", _("out of memory, k/e/m:xrealloc:117"));
 
   return ptr;
 }
@@ -143,7 +143,7 @@ xasprintf (const char *fmt, ...)
   result = grub_xvasprintf (fmt, ap);
   va_end (ap);
   if (!result)
-    grub_util_error ("%s", _("out of memory"));
+    grub_util_error ("%s", _("out of memory,k/e/m:xasprintf:146"));
   
   return result;
 }

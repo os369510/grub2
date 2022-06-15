@@ -158,7 +158,7 @@ grub_script_lexer_yywrap (struct grub_parser_param *parserstate,
 
   if (! line)
     {
-      grub_script_yyerror (parserstate, N_("out of memory"));
+      grub_script_yyerror (parserstate, N_("out of memory,script/lexer.c:grub_script_lexer_yywrap:391"));
       return 1;
     }
 
@@ -194,7 +194,7 @@ grub_script_lexer_yywrap (struct grub_parser_param *parserstate,
 
   if (! line)
     {
-      grub_script_yyerror (parserstate, N_("out of memory"));
+      grub_script_yyerror (parserstate, N_("out of memory,script/lexer.c:grub_script_lexer_yywrap:197"));
       return 1;
     }
 

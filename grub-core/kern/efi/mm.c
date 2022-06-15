@@ -173,7 +173,7 @@ grub_efi_allocate_pages_real (grub_efi_physical_address_t address,
   status = efi_call_4 (b->allocate_pages, alloctype, memtype, pages, &address);
   if (status != GRUB_EFI_SUCCESS)
     {
-      grub_error (GRUB_ERR_OUT_OF_MEMORY, N_("out of memory"));
+      grub_error (GRUB_ERR_OUT_OF_MEMORY, N_("out of memory,k/e/m:grub_efi_allocate_pages_real:144"));
       return NULL;
     }
 
@@ -186,7 +186,7 @@ grub_efi_allocate_pages_real (grub_efi_physical_address_t address,
       grub_efi_free_pages (0, pages);
       if (status != GRUB_EFI_SUCCESS)
 	{
-	  grub_error (GRUB_ERR_OUT_OF_MEMORY, N_("out of memory"));
+	  grub_error (GRUB_ERR_OUT_OF_MEMORY, N_("out of memory,k/e/m:grub_efi_allocate_pages_real:157"));
 	  return NULL;
 	}
     }

@@ -45,7 +45,7 @@ grub_osdep_dl_memalign (grub_size_t align, grub_size_t size)
 
   if (!ret)
     {
-      grub_error (GRUB_ERR_OUT_OF_MEMORY, N_("out of memory"));
+      grub_error (GRUB_ERR_OUT_OF_MEMORY, N_("out of memory,o/u/d:grub_osdep_dl_memalign:48"));
       return NULL;
     }
 

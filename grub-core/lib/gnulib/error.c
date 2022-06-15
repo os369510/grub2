@@ -229,6 +229,7 @@ error_tail (int status, int errnum, const char *message, va_list args)
               if (p == NULL)
                 {
                   free (wmessage);
+                  fputws_unlocked (L"debug: lib/gnulib/error.c\n", stderr);
                   fputws_unlocked (L"out of memory\n", stderr);
                   return;
                 }
