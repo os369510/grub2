@@ -42,7 +42,7 @@ void grub_mm_check_real (const char *file, int line);
 #define grub_mm_check() grub_mm_check_real (GRUB_FILE, __LINE__);
 
 /* For debugging.  */
-#if defined(MM_DEBUG) && !defined(GRUB_UTIL) && !defined (GRUB_MACHINE_EMU)
+#if (defined(MM_DEBUG) && !defined(GRUB_UTIL) && !defined (GRUB_MACHINE_EMU)) || (defined(__x86_64__) && defined (GRUB_MACHINE_EFI))
 /* Set this variable to 1 when you want to trace all memory function calls.  */
 extern int EXPORT_VAR(grub_mm_debug);
 

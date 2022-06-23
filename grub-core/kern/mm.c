@@ -69,7 +69,8 @@
 #include <grub/mm_private.h>
 #include <grub/safemath.h>
 
-#ifdef MM_DEBUG
+#if defined(__x86_64__) && defined (GRUB_MACHINE_EFI)
+#include <grub/term.h>
 # undef grub_calloc
 # undef grub_malloc
 # undef grub_zalloc
@@ -373,6 +374,10 @@ grub_memalign (grub_size_t align, grub_size_t size)
     }
 
  fail:
+#if defined(__x86_64__) && defined (GRUB_MACHINE_EFI)
+  grub_mm_dump (__LINE__);
+  grub_refresh ();
+#endif
   grub_error (GRUB_ERR_OUT_OF_MEMORY, N_("out of memory,k/m:grub_memalign:376"));
   return 0;
 }
@@ -393,7 +398,11 @@ grub_calloc (grub_size_t nmemb, grub_size_t size)
       return NULL;
     }
 
+#if defined(__x86_64__) && defined (GRUB_MACHINE_EFI)
+  ret = grub_debug_memalign (__FILE__, __LINE__, 0, sz);
+#else
   ret = grub_memalign (0, sz);
+#endif
   if (!ret)
     return NULL;
 
@@ -405,7 +414,11 @@ grub_calloc (grub_size_t nmemb, grub_size_t size)
 void *
 grub_malloc (grub_size_t size)
 {
+#if defined(__x86_64__) && defined (GRUB_MACHINE_EFI)
+  return grub_debug_memalign (__FILE__, __LINE__, 0, size);
+#else
   return grub_memalign (0, size);
+#endif
 }
 
 /* Allocate SIZE bytes, clear them and return the pointer.  */
@@ -414,7 +427,11 @@ grub_zalloc (grub_size_t size)
 {
   void *ret;
 
+#if defined(__x86_64__) && defined (GRUB_MACHINE_EFI)
+  ret = grub_debug_memalign (__FILE__, __LINE__, 0, size);
+#else
   ret = grub_memalign (0, size);
+#endif
   if (ret)
     grub_memset (ret, 0, size);
 
@@ -527,7 +544,7 @@ grub_realloc (void *ptr, grub_size_t size)
   return q;
 }
 
-#ifdef MM_DEBUG
+#if defined(__x86_64__) && defined (GRUB_MACHINE_EFI)
 int grub_mm_debug = 0;
 
 void
@@ -578,7 +595,7 @@ grub_mm_dump (unsigned lineno)
 			   p, (unsigned int) p->size << GRUB_MM_ALIGN_LOG2, p->next);
 	      break;
 	    case GRUB_MM_ALLOC_MAGIC:
-	      grub_printf ("A:%p:%u\n", p, (unsigned int) p->size << GRUB_MM_ALIGN_LOG2);
+	      //grub_printf ("A:%p:%u\n", p, (unsigned int) p->size << GRUB_MM_ALIGN_LOG2);
 	      break;
 	    }
 	}
