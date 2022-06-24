@@ -126,3 +126,6 @@ linuxefi-do-not-validate-kernels-twice.patch
 fdt-add-debug-output-to-devicetree-command.patch
 efi-EFI-Device-Tree-Fixup-Protocol.patch
 ubuntu-disable-LOAD-FILE2-protocol-for-initrd-on-ARM.patch
+0016-Add-debug-message-on-out-of-memory.patch
+0017-do-not-strip-kernel.exec.patch
+0131-Make-linux-can-load-onto-2GB-memory.patch

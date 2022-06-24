@@ -1,0 +1,242 @@
+From: Jeremy Szu <jeremy.szu@canonical.com>
+Date: Thu, 16 Jun 2022 01:33:33 +0800
+Subject: Add debug message on out-of-memory
+
+---
+ grub-core/commands/acpihalt.c      | 1 +
+ grub-core/kern/efi/mm.c            | 4 ++--
+ grub-core/kern/emu/misc.c          | 8 ++++----
+ grub-core/kern/emu/mm.c            | 6 +++---
+ grub-core/kern/mm.c                | 2 +-
+ grub-core/lib/gnulib/error.c       | 1 +
+ grub-core/lib/relocator.c          | 9 +++++----
+ grub-core/loader/efi/chainloader.c | 2 +-
+ grub-core/osdep/unix/dl.c          | 2 +-
+ grub-core/script/lexer.c           | 4 ++--
+ grub-core/script/yylex.l           | 2 +-
+ 11 files changed, 22 insertions(+), 19 deletions(-)
+
+diff --git a/grub-core/commands/acpihalt.c b/grub-core/commands/acpihalt.c
+index 9cc7f18..7d963ff 100644
+--- a/grub-core/commands/acpihalt.c
++++ b/grub-core/commands/acpihalt.c
+@@ -365,6 +365,7 @@ main (int argc, char **argv)
+   buf = malloc (len);
+   if (!buf)
+     {
++      printf (_("error: acpihalt.c:main():368.\n"));
+       printf (_("error: %s.\n"), _("out of memory"));
+       fclose (f);
+       return 2;
+diff --git a/grub-core/kern/efi/mm.c b/grub-core/kern/efi/mm.c
+index f6aef0e..a8d0087 100644
+--- a/grub-core/kern/efi/mm.c
++++ b/grub-core/kern/efi/mm.c
+@@ -173,7 +173,7 @@ grub_efi_allocate_pages_real (grub_efi_physical_address_t address,
+   status = efi_call_4 (b->allocate_pages, alloctype, memtype, pages, &address);
+   if (status != GRUB_EFI_SUCCESS)
+     {
+-      grub_error (GRUB_ERR_OUT_OF_MEMORY, N_("out of memory"));
++      grub_error (GRUB_ERR_OUT_OF_MEMORY, N_("out of memory,k/e/m:grub_efi_allocate_pages_real:144"));
+       return NULL;
+     }
+ 
+@@ -186,7 +186,7 @@ grub_efi_allocate_pages_real (grub_efi_physical_address_t address,
+       grub_efi_free_pages (0, pages);
+       if (status != GRUB_EFI_SUCCESS)
+ 	{
+-	  grub_error (GRUB_ERR_OUT_OF_MEMORY, N_("out of memory"));
++	  grub_error (GRUB_ERR_OUT_OF_MEMORY, N_("out of memory,k/e/m:grub_efi_allocate_pages_real:157"));
+ 	  return NULL;
+ 	}
+     }
+diff --git a/grub-core/kern/emu/misc.c b/grub-core/kern/emu/misc.c
+index 0ff13bc..da8ba34 100644
+--- a/grub-core/kern/emu/misc.c
++++ b/grub-core/kern/emu/misc.c
+@@ -92,7 +92,7 @@ xcalloc (grub_size_t nmemb, grub_size_t size)
+ 
+   p = calloc (nmemb, size);
+   if (!p)
+-    grub_util_error ("%s", _("out of memory"));
++    grub_util_error ("%s", _("out of memory, k/e/m:xcalloc:95"));
+ 
+   return p;
+ }
+@@ -104,7 +104,7 @@ xmalloc (grub_size_t size)
+ 
+   p = malloc (size);
+   if (! p)
+-    grub_util_error ("%s", _("out of memory"));
++    grub_util_error ("%s", _("out of memory,k/e/m:xmalloc:107"));
+ 
+   return p;
+ }
+@@ -114,7 +114,7 @@ xrealloc (void *ptr, grub_size_t size)
+ {
+   ptr = realloc (ptr, size);
+   if (! ptr)
+-    grub_util_error ("%s", _("out of memory"));
++    grub_util_error ("%s", _("out of memory, k/e/m:xrealloc:117"));
+ 
+   return ptr;
+ }
+@@ -143,7 +143,7 @@ xasprintf (const char *fmt, ...)
+   result = grub_xvasprintf (fmt, ap);
+   va_end (ap);
+   if (!result)
+-    grub_util_error ("%s", _("out of memory"));
++    grub_util_error ("%s", _("out of memory,k/e/m:xasprintf:146"));
+   
+   return result;
+ }
+diff --git a/grub-core/kern/emu/mm.c b/grub-core/kern/emu/mm.c
+index 4d1046a..d3be05b 100644
+--- a/grub-core/kern/emu/mm.c
++++ b/grub-core/kern/emu/mm.c
+@@ -31,7 +31,7 @@ grub_calloc (grub_size_t nmemb, grub_size_t size)
+   void *ret;
+   ret = calloc (nmemb, size);
+   if (!ret)
+-    grub_error (GRUB_ERR_OUT_OF_MEMORY, N_("out of memory"));
++    grub_error (GRUB_ERR_OUT_OF_MEMORY, N_("out of memory,k/e/m:grub_calloc:34"));
+   return ret;
+ }
+ 
+@@ -41,7 +41,7 @@ grub_malloc (grub_size_t size)
+   void *ret;
+   ret = malloc (size);
+   if (!ret)
+-    grub_error (GRUB_ERR_OUT_OF_MEMORY, N_("out of memory"));
++    grub_error (GRUB_ERR_OUT_OF_MEMORY, N_("out of memory,k/e/m:grub_malloc:44"));
+   return ret;
+ }
+ 
+@@ -70,6 +70,6 @@ grub_realloc (void *ptr, grub_size_t size)
+   void *ret;
+   ret = realloc (ptr, size);
+   if (!ret)
+-    grub_error (GRUB_ERR_OUT_OF_MEMORY, N_("out of memory"));
++    grub_error (GRUB_ERR_OUT_OF_MEMORY, N_("out of memory,k/e/m:grub_realloc:73"));
+   return ret;
+ }
+diff --git a/grub-core/kern/mm.c b/grub-core/kern/mm.c
+index c070afc..7b4f55f 100644
+--- a/grub-core/kern/mm.c
++++ b/grub-core/kern/mm.c
+@@ -373,7 +373,7 @@ grub_memalign (grub_size_t align, grub_size_t size)
+     }
+ 
+  fail:
+-  grub_error (GRUB_ERR_OUT_OF_MEMORY, N_("out of memory"));
++  grub_error (GRUB_ERR_OUT_OF_MEMORY, N_("out of memory,k/m:grub_memalign:376"));
+   return 0;
+ }
+ 
+diff --git a/grub-core/lib/gnulib/error.c b/grub-core/lib/gnulib/error.c
+index 7e532f0..13d4eb5 100644
+--- a/grub-core/lib/gnulib/error.c
++++ b/grub-core/lib/gnulib/error.c
+@@ -229,6 +229,7 @@ error_tail (int status, int errnum, const char *message, va_list args)
+               if (p == NULL)
+                 {
+                   free (wmessage);
++                  fputws_unlocked (L"debug: lib/gnulib/error.c\n", stderr);
+                   fputws_unlocked (L"out of memory\n", stderr);
+                   return;
+                 }
+diff --git a/grub-core/lib/relocator.c b/grub-core/lib/relocator.c
+index f2c1944..f4b25ce 100644
+--- a/grub-core/lib/relocator.c
++++ b/grub-core/lib/relocator.c
+@@ -1279,7 +1279,7 @@ grub_relocator_alloc_chunk_addr (struct grub_relocator *rel,
+ 
+       grub_dprintf ("relocator", "not allocated\n");
+       grub_free (chunk);
+-      return grub_error (GRUB_ERR_OUT_OF_MEMORY, N_("out of memory"));
++      return grub_error (GRUB_ERR_OUT_OF_MEMORY, N_("out of memory, lib/relocator:grub_relocator_alloc_chunk_addr():1282"));
+     }
+   while (0);
+ 
+@@ -1436,7 +1436,7 @@ grub_relocator_alloc_chunk_align (struct grub_relocator *rel,
+ 	  break;
+ 	}
+ 
+-      return grub_error (GRUB_ERR_OUT_OF_MEMORY, N_("out of memory"));
++      return grub_error (GRUB_ERR_OUT_OF_MEMORY, N_("out of memory,lib/relocator.c:grub_relocator_alloc_chunk_align:1439"));
+     }
+   while (0);
+ 
+@@ -1534,8 +1534,9 @@ grub_relocator_prepare_relocs (struct grub_relocator *rel, grub_addr_t addr,
+ 
+   if (!malloc_in_range (rel, 0, ~(grub_addr_t)0 - rel->relocators_size + 1,
+ 			grub_relocator_align,
+-			rel->relocators_size, &movers_chunk, 1, 1))
+-    return grub_error (GRUB_ERR_OUT_OF_MEMORY, N_("out of memory"));
++			rel->relocators_size, &movers_chunk, 1, 1)){
++    return grub_error (GRUB_ERR_OUT_OF_MEMORY, N_("out of memory, lib/relocator.c:grub_relocator_prepare_relocs:1538"));
++  }
+   movers_chunk.srcv = rels = rels0
+     = grub_map_memory (movers_chunk.src, movers_chunk.size);
+ 
+diff --git a/grub-core/loader/efi/chainloader.c b/grub-core/loader/efi/chainloader.c
+index c6ae2fc..c615fef 100644
+--- a/grub-core/loader/efi/chainloader.c
++++ b/grub-core/loader/efi/chainloader.c
+@@ -1021,7 +1021,7 @@ grub_cmd_chainloader (grub_command_t cmd __attribute__ ((unused)),
+     {
+       grub_dprintf ("chain", "Failed to allocate %u pages\n",
+ 		    (unsigned int) pages);
+-      grub_error (GRUB_ERR_OUT_OF_MEMORY, N_("out of memory"));
++      grub_error (GRUB_ERR_OUT_OF_MEMORY, N_("out of memory,l/e/c:305"));
+       goto fail;
+     }
+ 
+diff --git a/grub-core/osdep/unix/dl.c b/grub-core/osdep/unix/dl.c
+index 562b101..73008fa 100644
+--- a/grub-core/osdep/unix/dl.c
++++ b/grub-core/osdep/unix/dl.c
+@@ -45,7 +45,7 @@ grub_osdep_dl_memalign (grub_size_t align, grub_size_t size)
+ 
+   if (!ret)
+     {
+-      grub_error (GRUB_ERR_OUT_OF_MEMORY, N_("out of memory"));
++      grub_error (GRUB_ERR_OUT_OF_MEMORY, N_("out of memory,o/u/d:grub_osdep_dl_memalign:48"));
+       return NULL;
+     }
+ 
+diff --git a/grub-core/script/lexer.c b/grub-core/script/lexer.c
+index 52004d0..83c0321 100644
+--- a/grub-core/script/lexer.c
++++ b/grub-core/script/lexer.c
+@@ -158,7 +158,7 @@ grub_script_lexer_yywrap (struct grub_parser_param *parserstate,
+ 
+   if (! line)
+     {
+-      grub_script_yyerror (parserstate, N_("out of memory"));
++      grub_script_yyerror (parserstate, N_("out of memory,script/lexer.c:grub_script_lexer_yywrap:391"));
+       return 1;
+     }
+ 
+@@ -194,7 +194,7 @@ grub_script_lexer_yywrap (struct grub_parser_param *parserstate,
+ 
+   if (! line)
+     {
+-      grub_script_yyerror (parserstate, N_("out of memory"));
++      grub_script_yyerror (parserstate, N_("out of memory,script/lexer.c:grub_script_lexer_yywrap:197"));
+       return 1;
+     }
+ 
+diff --git a/grub-core/script/yylex.l b/grub-core/script/yylex.l
+index b7203c8..9411243 100644
+--- a/grub-core/script/yylex.l
++++ b/grub-core/script/yylex.l
+@@ -386,7 +386,7 @@ grub_lexer_unput (const char *text, yyscan_t yyscanner)
+   lexerstate->prefix = grub_strdup (text);
+   if (! lexerstate->prefix)
+     {
+-      grub_script_yyerror (yyget_extra (yyscanner), N_("out of memory"));
++      grub_script_yyerror (yyget_extra (yyscanner), N_("out of memory,script/yylex.l:grub_lexer_unput:389"));
+       return 1;
+     }
+   return 0;
