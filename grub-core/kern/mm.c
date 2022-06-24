@@ -347,6 +347,9 @@ grub_real_malloc (grub_mm_header_t *first, grub_size_t n, grub_size_t align)
       if (cur == *first)
 	break;
     }
+    else
+        grub_dprintf("No contiguous available memory for size 0x%" PRIxGRUB_SIZE "\n",
+                cur->size);
 
   return 0;
 }
