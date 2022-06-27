@@ -1,0 +1,51 @@
+From: Jeremy Szu <jeremy.szu@canonical.com>
+Date: Mon, 27 Jun 2022 22:04:35 +0800
+Subject: Fix wrong print of types
+
+---
+ grub-core/loader/i386/efi/linux.c | 6 +++---
+ include/grub/efi/api.h            | 4 ++++
+ 2 files changed, 7 insertions(+), 3 deletions(-)
+
+diff --git a/grub-core/loader/i386/efi/linux.c b/grub-core/loader/i386/efi/linux.c
+index ffdcc19..c1c28f2 100644
+--- a/grub-core/loader/i386/efi/linux.c
++++ b/grub-core/loader/i386/efi/linux.c
+@@ -99,8 +99,8 @@ kernel_alloc(grub_efi_uintn_t size, const char * const errmsg)
+ 	continue;
+ 
+       pages = BYTES_TO_PAGES(size);
+-      grub_dprintf ("linuxefi", "Trying to allocate %lu pages from %p\n",
+-		    pages, (void *)max);
++      grub_dprintf ("linuxefi", "Trying to allocate %" PRIuGRUB_EFI_UINT_T " pages from %" PRIuGRUB_UINT64_T "\n",
++		    pages, max);
+ 
+       prev_max = max;
+       addr = grub_efi_allocate_pages_real (max, pages,
+@@ -375,7 +375,7 @@ grub_cmd_linux (grub_command_t cmd __attribute__ ((unused)),
+   grub_memset (params, 0, sizeof(*params));
+ 
+   setup_header_end_offset = *((grub_uint8_t *)kernel + 0x201);
+-  grub_dprintf ("linuxefi", "copying %lu bytes from %p to %p\n",
++  grub_dprintf ("linuxefi", "copying %" PRIuGRUB_SIZE " bytes from %p to %p\n",
+ 		MIN((grub_size_t)0x202+setup_header_end_offset,
+ 		    sizeof (*params)) - 0x1f1,
+ 		(grub_uint8_t *)kernel + 0x1f1,
+diff --git a/include/grub/efi/api.h b/include/grub/efi/api.h
+index c222a2e..37dc61f 100644
+--- a/include/grub/efi/api.h
++++ b/include/grub/efi/api.h
+@@ -551,9 +551,13 @@ typedef char grub_efi_boolean_t;
+ #if GRUB_CPU_SIZEOF_VOID_P == 8
+ typedef grub_int64_t grub_efi_intn_t;
+ typedef grub_uint64_t grub_efi_uintn_t;
++# define PRIxGRUB_EFI_INT_T     PRIdGRUB_UINT64_T
++# define PRIuGRUB_EFI_UINT_T    PRIuGRUB_UINT64_T
+ #else
+ typedef grub_int32_t grub_efi_intn_t;
+ typedef grub_uint32_t grub_efi_uintn_t;
++# define PRIxGRUB_EFI_INT_T     PRIdGRUB_INT32_T
++# define PRIuGRUB_EFI_UINT_T    PRIuGRUB_UINT32_T
+ #endif
+ typedef grub_int8_t grub_efi_int8_t;
+ typedef grub_uint8_t grub_efi_uint8_t;

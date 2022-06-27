@@ -129,3 +129,7 @@ ubuntu-disable-LOAD-FILE2-protocol-for-initrd-on-ARM.patch
 0016-Add-debug-message-on-out-of-memory.patch
 0017-do-not-strip-kernel.exec.patch
 0131-Make-linux-can-load-onto-2GB-memory.patch
+0132-x86-efi-Make-our-own-allocator-for-kernel-stuff.patch
+0133-x86-efi-Allow-initrd-params-cmdline-allocations-abov.patch
+0134-x86-efi-Use-bounce-buffers-for-reading-to-addresses-.patch
+0135-Fix-wrong-print-of-types.patch
