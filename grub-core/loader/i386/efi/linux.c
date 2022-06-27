@@ -99,8 +99,8 @@ kernel_alloc(grub_efi_uintn_t size, const char * const errmsg)
 	continue;
 
       pages = BYTES_TO_PAGES(size);
-      grub_dprintf ("linuxefi", "Trying to allocate %lu pages from %p\n",
-		    pages, (void *)max);
+      grub_dprintf ("linuxefi", "Trying to allocate %" PRIuGRUB_EFI_UINT_T " pages from %" PRIuGRUB_UINT64_T "\n",
+		    pages, max);
 
       prev_max = max;
       addr = grub_efi_allocate_pages_real (max, pages,
@@ -375,7 +375,7 @@ grub_cmd_linux (grub_command_t cmd __attribute__ ((unused)),
   grub_memset (params, 0, sizeof(*params));
 
   setup_header_end_offset = *((grub_uint8_t *)kernel + 0x201);
-  grub_dprintf ("linuxefi", "copying %lu bytes from %p to %p\n",
+  grub_dprintf ("linuxefi", "copying %" PRIuGRUB_SIZE " bytes from %p to %p\n",
 		MIN((grub_size_t)0x202+setup_header_end_offset,
 		    sizeof (*params)) - 0x1f1,
 		(grub_uint8_t *)kernel + 0x1f1,
