@@ -27,6 +27,7 @@
 #include <grub/lib/cmdline.h>
 #include <grub/efi/efi.h>
 #include <grub/efi/linux.h>
+#include <grub/cpu/efi/memory.h>
 #include <grub/safemath.h>
 
 GRUB_MOD_LICENSE ("GPLv3+");
@@ -111,7 +112,7 @@ grub_cmd_initrd (grub_command_t cmd __attribute__ ((unused)),
 	}
     }
 
-  initrd_mem = grub_efi_allocate_pages_max (0x3fffffff, BYTES_TO_PAGES(size));
+  initrd_mem = grub_efi_allocate_pages_max (GRUB_EFI_MAX_ALLOCATION_ADDRESS, BYTES_TO_PAGES(size));
 
   if (!initrd_mem)
     {
@@ -119,10 +120,10 @@ grub_cmd_initrd (grub_command_t cmd __attribute__ ((unused)),
       goto fail;
     }
 
-  grub_dprintf ("linuxefi", "initrd_mem = %lx\n", (unsigned long) initrd_mem);
+  grub_dprintf ("linuxefi", "initrd_mem = %p\n", initrd_mem);
 
   params->ramdisk_size = size;
-  params->ramdisk_image = (grub_uint32_t)(grub_addr_t) initrd_mem;
+  params->ramdisk_image = (grub_addr_t) initrd_mem;
 
   ptr = initrd_mem;
 
@@ -199,7 +200,10 @@ grub_cmd_linux (grub_command_t cmd __attribute__ ((unused)),
       goto fail;
     }
 
-  params = grub_efi_allocate_pages_max (0x3fffffff,
+  lh = (struct linux_i386_kernel_header *)kernel;
+  grub_dprintf ("linux", "original lh is at %p\n", kernel);
+
+  params = grub_efi_allocate_pages_max (GRUB_EFI_MAX_ALLOCATION_ADDRESS,
 					BYTES_TO_PAGES(sizeof(*params)));
   if (! params)
     {
@@ -221,7 +225,7 @@ grub_cmd_linux (grub_command_t cmd __attribute__ ((unused)),
 	       (grub_uint8_t *)kernel + 0x1f1,
 		MIN((grub_size_t)0x202+setup_header_end_offset,sizeof (*params)) - 0x1f1);
   lh = (struct linux_i386_kernel_header *)params;
-  grub_dprintf ("linuxefi", "lh is at %p\n", lh);
+  grub_dprintf ("linuxefi", "final lh is at %p\n", lh);
   grub_dprintf ("linuxefi", "checking lh->boot_flag\n");
   if (lh->boot_flag != grub_cpu_to_le16 (0xaa55))
     {
@@ -270,7 +274,7 @@ grub_cmd_linux (grub_command_t cmd __attribute__ ((unused)),
 #endif
 
   grub_dprintf ("linuxefi", "setting up cmdline\n");
-  linux_cmdline = grub_efi_allocate_pages_max(0x3fffffff,
+  linux_cmdline = grub_efi_allocate_pages_max(GRUB_EFI_MAX_ALLOCATION_ADDRESS,
 					 BYTES_TO_PAGES(lh->cmdline_size + 1));
   if (!linux_cmdline)
     {
@@ -278,8 +282,7 @@ grub_cmd_linux (grub_command_t cmd __attribute__ ((unused)),
       goto fail;
     }
 
-  grub_dprintf ("linuxefi", "linux_cmdline = %lx\n",
-		(unsigned long)linux_cmdline);
+  grub_dprintf ("linuxefi", "linux_cmdline = %p\n", linux_cmdline);
 
   grub_memcpy (linux_cmdline, LINUX_IMAGE, sizeof (LINUX_IMAGE));
   grub_create_loader_cmdline (argc, argv,
@@ -287,45 +290,41 @@ grub_cmd_linux (grub_command_t cmd __attribute__ ((unused)),
 			      lh->cmdline_size - (sizeof (LINUX_IMAGE) - 1),
 			      GRUB_VERIFY_KERNEL_CMDLINE);
 
-  grub_dprintf ("linuxefi", "setting lh->cmd_line_ptr\n");
-  lh->cmd_line_ptr = (grub_uint32_t)(grub_addr_t)linux_cmdline;
+  grub_dprintf ("linuxefi", "setting lh->cmd_line_ptr to %p\n",
+          linux_cmdline);
+  lh->cmd_line_ptr = (grub_addr_t)linux_cmdline;
 
-  grub_dprintf ("linuxefi", "computing handover offset\n");
   handover_offset = lh->handover_offset;
+  grub_dprintf("linux", "handover_offset: 0x%08x\n", handover_offset);
 
   start = (lh->setup_sects + 1) * 512;
 
   kernel_mem = grub_efi_allocate_fixed(lh->pref_address,
 				       BYTES_TO_PAGES(lh->init_size));
-
   if (!kernel_mem)
     {
       grub_error_pop();
-      kernel_mem = grub_efi_allocate_pages_max (
-          0x3fffffff, BYTES_TO_PAGES (lh->init_size));
-    }
-
-  if (!kernel_mem)
-    {
       grub_error (GRUB_ERR_OUT_OF_MEMORY, N_("can't allocate kernel"));
       goto fail;
     }
 
-  grub_dprintf ("linuxefi", "kernel_mem = %lx\n", (unsigned long) kernel_mem);
+  grub_dprintf ("linuxefi", "kernel_mem = %p\n", kernel_mem);
 
   grub_loader_set (grub_linuxefi_boot, grub_linuxefi_unload, 0);
   loaded=1;
   grub_dprintf ("linuxefi", "setting lh->code32_start to %p\n", kernel_mem);
-  lh->code32_start = (grub_uint32_t)(grub_addr_t) kernel_mem;
+  lh->code32_start = (grub_addr_t) kernel_mem;
 
   grub_memcpy (kernel_mem, (char *)kernel + start, filelen - start);
 
-  grub_dprintf ("linuxefi", "setting lh->type_of_loader\n");
   lh->type_of_loader = 0x6;
+  grub_dprintf ("linuxefi", "setting lh->type_of_loader = 0x%x\n",
+          lh->type_of_loader);
 
-  grub_dprintf ("linuxefi", "setting lh->ext_loader_{type,ver}\n");
   params->ext_loader_type = 0;
   params->ext_loader_ver = 2;
+  grub_dprintf ("linuxefi", "setting lh->ext_loader_{type,ver} = 0x%x, 0x%x\n",
+          params->ext_loader_type, params->ext_loader_ver);
   grub_dprintf("linuxefi", "kernel_mem: %p handover_offset: %08x\n",
 	       kernel_mem, handover_offset);
 
