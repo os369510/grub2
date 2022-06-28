@@ -132,3 +132,4 @@ ubuntu-disable-LOAD-FILE2-protocol-for-initrd-on-ARM.patch
 0132-x86-efi-Make-our-own-allocator-for-kernel-stuff.patch
 0133-x86-efi-Allow-initrd-params-cmdline-allocations-abov.patch
 0134-linuxefi-fail-kernel-validation-without-shim-protoco.patch
+0135-Fix-4GB-memory-be-filtered-out-by-filter_memory_map.patch
