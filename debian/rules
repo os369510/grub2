@@ -16,9 +16,11 @@ HOST_CPPFLAGS := $(shell dpkg-buildflags --get CPPFLAGS)
 # -O3 (default on Ubuntu ppc64el) introduces various -Werror failures, and
 # isn't worth it here.
 ifneq (,$(filter s390x,$(DEB_HOST_ARCH_CPU)))
-HOST_CFLAGS := -Wall -Wno-error=unused-result $(shell dpkg-buildflags --get CFLAGS | perl -pe 's/-O[23]\b/-O1/')
+#HOST_CFLAGS := -Wall -Wno-error=unused-result $(shell dpkg-buildflags --get CFLAGS | perl -pe 's/-O[23]\b/-O1/')
+HOST_CFLAGS := -Wall -Wno-error=unused-result $(shell dpkg-buildflags --get CFLAGS | perl -pe 's/-O[s23]\b/-O0/') -O0 -g
 else
-HOST_CFLAGS := -Wall -Wno-error=unused-result $(shell dpkg-buildflags --get CFLAGS | perl -pe 's/-O3\b/-O2/')
+#HOST_CFLAGS := -Wall -Wno-error=unused-result $(shell dpkg-buildflags --get CFLAGS | perl -pe 's/-O3\b/-O2/')
+HOST_CFLAGS := -Wall -Wno-error=unused-result $(shell dpkg-buildflags --get CFLAGS | perl -pe 's/-O[s23]\b/-O0/') -O0 -g
 endif
 HOST_LDFLAGS := $(shell dpkg-buildflags --get LDFLAGS)
 
@@ -40,14 +42,14 @@ endif
 
 # Ensure that debhelper doesn't try to set these; we need to be careful
 # about HOST_* vs. TARGET_*.
-export CPPFLAGS :=
-export CFLAGS :=
-export LDFLAGS :=
+export CPPFLAGS := -O0 -g
+export CFLAGS := -O0 -g
+export LDFLAGS := -O0 -g
 
 ifeq (,$(shell which qemu-system-i386 2>/dev/null))
 with_check := no
 else
-with_check := yes
+with_check := no
 endif
 
 CC := gcc-10
@@ -120,6 +122,7 @@ confflags += \
 	--enable-quiet-boot \
 	--enable-quick-boot \
 	--enable-gfxpayload-dynamic \
+	--enable-mm-debug \
 	--enable-vt-handoff
 substvars += \
 	-Vlsb-base-depends="lsb-base (>= 3.0-6)" \
@@ -294,6 +297,10 @@ debian/stamps/build-grub-none debian/stamps/build-grub-efi-ia64 debian/stamps/bu
 
 debian/stamps/build-grub-efi-ia32 debian/stamps/build-grub-efi-amd64 debian/stamps/build-grub-efi-arm64: debian/stamps/build-%: debian/stamps/configure-% debian/stamps/build-grub-$(COMMON_PLATFORM)
 	dh_auto_build
+	echo '---jeremy---'
+	objdump -h obj/grub-efi-amd64/grub-core/kernel.exec || true
+	cp obj/grub-efi-amd64/grub-core/kernel.exec obj/grub-efi-amd64/grub-core/kernel.img || true
+	objdump -h obj/grub-efi-amd64/grub-core/kernel.img || true
 ifneq (i386,$(DEB_HOST_ARCH_CPU))
 	grub_dir=`mktemp -d` ; \
 	sed -e "s/@DEB_VERSION@/$(deb_version)/g" \
@@ -482,7 +489,7 @@ install/grub-pc install/grub-efi-ia32 install/grub-efi-amd64 install/grub-efi-ia
 		xargs -0r chmod +x
 	find debian/tmp-$(package)/usr/lib/grub -name gdb_grub -print0 | \
 		xargs -0r chmod -x
-	find debian/tmp-$(package)/usr/lib/grub -name gmodule.pl -print0 | \
+	find debian/tmp-$(package)/usr/lib/grub -name gdb_helper.sh -print0 | \
 		xargs -0r chmod -x
 
 	mkdir -p debian/$(package_bin)/usr/share/lintian/overrides
