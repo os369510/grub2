@@ -1,3 +1,9 @@
+grub2 (2.06-2ubuntu7+lp1842320) jammy; urgency=medium
+
+  * test for LP: #1842320
+
+ -- Jeremy Szu <jeremy.szu@canonical.com>  Tue, 28 Jun 2022 21:11:28 +0800
+
 grub2 (2.06-2ubuntu7) jammy; urgency=medium
 
   [ Heinrich Schuchardt ]
