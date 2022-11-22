@@ -92,7 +92,7 @@ enum
     GRUB_VIDEO_LINUX_TYPE_SIMPLE = 0x70    /* Linear framebuffer without any additional functions.  */
   };
 
-/* For the Linux/i386 boot protocol version 2.10.  */
+/* For the Linux/i386 boot protocol version 2.13.  */
 struct linux_i386_kernel_header
 {
   grub_uint8_t code1[0x0020];
@@ -138,6 +138,12 @@ struct linux_i386_kernel_header
   grub_uint32_t kernel_alignment;
   grub_uint8_t relocatable;
   grub_uint8_t min_alignment;
+  grub_uint16_t xloadflags;		/* Boot protocol option flags */
+#define LINUX_XLF_KERNEL_64                 (1 << 0)
+#define LINUX_XLF_CAN_BE_LOADED_ABOVE_4G    (1 << 1)
+#define LINUX_XLF_EFI_HANDOVER_32           (1 << 2)
+#define LINUX_XLF_EFI_HANDOVER_64           (1 << 3)
+#define LINUX_XLF_EFI_KEXEC                 (1 << 4)
   grub_uint8_t pad[2];
   grub_uint32_t cmdline_size;
   grub_uint32_t hardware_subarch;
@@ -147,7 +153,7 @@ struct linux_i386_kernel_header
   grub_uint64_t setup_data;
   grub_uint64_t pref_address;
   grub_uint32_t init_size;
-  grub_uint32_t handover_offset;
+  grub_uint32_t handover_offset;	/* Protocal 2.11 (deprecated) */
 } GRUB_PACKED;
 
 /* Boot parameters for Linux based on 2.6.12. This is used by the setup
@@ -231,7 +237,11 @@ struct linux_kernel_params
   grub_uint32_t ofw_cif_handler;	/* b8 */
   grub_uint32_t ofw_idt;		/* bc */
 
-  grub_uint8_t padding7[0x1b8 - 0xc0];
+  grub_uint32_t ext_ramdisk_image;      /* c0 */
+  grub_uint32_t ext_ramdisk_size;       /* c4 */
+  grub_uint32_t ext_cmd_line_ptr;       /* c8 */
+
+  grub_uint8_t padding7[0x1b8 - 0xcc];
 
   union
     {
@@ -315,7 +325,8 @@ struct linux_kernel_params
   grub_uint32_t initrd_addr_max;	/* Maximum initrd address */
   grub_uint32_t kernel_alignment;	/* Alignment of the kernel */
   grub_uint8_t relocatable_kernel;	/* Is the kernel relocatable */
-  grub_uint8_t pad1[3];
+  grub_uint8_t min_alignment;
+  grub_uint16_t xloadflags;		/* Boot protocol option flags */
   grub_uint32_t cmdline_size;		/* Size of the kernel command line */
   grub_uint32_t hardware_subarch;
   grub_uint64_t hardware_subarch_data;
