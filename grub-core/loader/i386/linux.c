@@ -650,6 +650,7 @@ grub_cmd_linux (grub_command_t cmd __attribute__ ((unused)),
   grub_file_t file = 0;
   struct linux_i386_kernel_header lh;
   grub_uint8_t setup_sects;
+  grub_uint16_t xloadflags;
   grub_size_t real_size, prot_size, prot_file_size;
   grub_ssize_t len;
   int i;
@@ -759,6 +760,16 @@ grub_cmd_linux (grub_command_t cmd __attribute__ ((unused)),
       /* Usually, the compression ratio is about 50%.  */
       prot_init_space = page_align (prot_size) * 3;
     }
+
+  if (grub_le_to_cpu16 (lh.version) >= 0x020c)
+    {
+      xloadflags = lh.xloadflags;
+    }
+  else
+    {
+      xloadflags = 0;
+    }
+
 
   if (allocate_pages (prot_size, &align,
 		      min_align, relocatable,
@@ -1041,6 +1052,7 @@ grub_cmd_initrd (grub_command_t cmd __attribute__ ((unused)),
   grub_addr_t addr;
   grub_err_t err;
   struct grub_linux_initrd_context initrd_ctx = { 0, 0, 0 };
+  int initrd_1g_limited = 1;
 
   if (argc == 0)
     {
@@ -1060,6 +1072,13 @@ grub_cmd_initrd (grub_command_t cmd __attribute__ ((unused)),
   size = grub_get_initrd_size (&initrd_ctx);
   aligned_size = ALIGN_UP (size, 4096);
 
+  /* Allow initrd be allocated over GRUB_LINUX_INITRD_MAX_ADDRESS */
+  if (grub_le_to_cpu16 (linux_params.version) >= 0x020c)
+    {
+      if (linux_params.xloadflags & LINUX_XLF_CAN_BE_LOADED_ABOVE_4G)
+	initrd_1g_limited = 0;
+    }
+
   /* Get the highest address available for the initrd.  */
   if (grub_le_to_cpu16 (linux_params.version) >= 0x0203)
     {
@@ -1068,8 +1087,13 @@ grub_cmd_initrd (grub_command_t cmd __attribute__ ((unused)),
       /* XXX in reality, Linux specifies a bogus value, so
 	 it is necessary to make sure that ADDR_MAX does not exceed
 	 0x3fffffff.  */
-      if (addr_max > GRUB_LINUX_INITRD_MAX_ADDRESS)
-	addr_max = GRUB_LINUX_INITRD_MAX_ADDRESS;
+      if (initrd_1g_limited == 1)
+	{
+	  if (addr_max > GRUB_LINUX_INITRD_MAX_ADDRESS)
+	    addr_max = GRUB_LINUX_INITRD_MAX_ADDRESS;
+	}
+      else
+	  addr_max = GRUB_LINUX_INITRD_MAX_ADDRESS_OVER_1G;
     }
   else
     addr_max = GRUB_LINUX_INITRD_MAX_ADDRESS;
@@ -1113,9 +1137,13 @@ grub_cmd_initrd (grub_command_t cmd __attribute__ ((unused)),
   grub_dprintf ("linux", "Initrd, addr=0x%x, size=0x%x\n",
 		(unsigned) addr, (unsigned) size);
 
-  linux_params.ramdisk_image = initrd_mem_target;
-  linux_params.ramdisk_size = size;
+  linux_params.ramdisk_image = GRUB_LINUX_ADDR_LOW_U32(initrd_mem_target);
+  linux_params.ramdisk_size = GRUB_LINUX_SIZE_LOW_U32(size);
   linux_params.root_dev = 0x0100; /* XXX */
+#ifdef __x86_64__
+  linux_params.ext_ramdisk_image = GRUB_LINUX_ADDR_HIGH_U32(initrd_mem_target);
+  linux_params.ext_ramdisk_size = GRUB_LINUX_SIZE_HIGH_U32(size);
+#endif
 
  fail:
   grub_initrd_close (&initrd_ctx);
