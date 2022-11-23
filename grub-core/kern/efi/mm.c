@@ -20,6 +20,7 @@
 #include <grub/misc.h>
 #include <grub/mm.h>
 #include <grub/efi/api.h>
+#include <grub/env.h>
 #include <grub/efi/efi.h>
 #include <grub/cpu/efi/memory.h>
 
@@ -119,18 +120,24 @@ grub_efi_allocate_pages_real (grub_efi_physical_address_t address,
 			      grub_efi_allocate_type_t alloctype,
 			      grub_efi_memory_type_t memtype)
 {
+  grub_efi_physical_address_t max_usable_addr = GRUB_EFI_MAX_USABLE_ADDRESS;
   grub_efi_status_t status;
   grub_efi_boot_services_t *b;
 
+#if defined (__x86_64__)
+  if (grub_env_get_bool("mmunlimited", false))
+    max_usable_addr = GRUB_EFI_MAX_USABLE_ADDRESS_64;
+#endif
+
   /* Limit the memory access to less than 4GB for 32-bit platforms.  */
-  if (address > GRUB_EFI_MAX_USABLE_ADDRESS)
+  if (address > max_usable_addr)
     {
       char inv_addr[17], max_addr[17]; /* log16(2^64) = 16, plus NUL. */
 
       grub_snprintf (inv_addr, sizeof (inv_addr) - 1, "%" PRIxGRUB_UINT64_T,
 		     address);
       grub_snprintf (max_addr, sizeof (max_addr) - 1, "%" PRIxGRUB_UINT64_T,
-		     (grub_efi_uint64_t) GRUB_EFI_MAX_USABLE_ADDRESS);
+		     (grub_efi_uint64_t) max_usable_addr);
       grub_error (GRUB_ERR_BAD_ARGUMENT,
 		  N_("invalid memory address (0x%s > 0x%s)"), inv_addr, max_addr);
       return NULL;
@@ -148,7 +155,7 @@ grub_efi_allocate_pages_real (grub_efi_physical_address_t address,
     {
       /* Uggh, the address 0 was allocated... This is too annoying,
 	 so reallocate another one.  */
-      address = GRUB_EFI_MAX_USABLE_ADDRESS;
+      address = max_usable_addr;
       status = efi_call_4 (b->allocate_pages, alloctype, memtype, pages, &address);
       grub_efi_free_pages (0, pages);
       if (status != GRUB_EFI_SUCCESS)
@@ -166,7 +173,14 @@ grub_efi_allocate_pages_real (grub_efi_physical_address_t address,
 void *
 grub_efi_allocate_any_pages (grub_efi_uintn_t pages)
 {
-  return grub_efi_allocate_pages_real (GRUB_EFI_MAX_USABLE_ADDRESS,
+  grub_efi_physical_address_t max_usable_addr = GRUB_EFI_MAX_USABLE_ADDRESS;
+
+#if defined (__x86_64__)
+  if (grub_env_get_bool("mmunlimited", false))
+    max_usable_addr = GRUB_EFI_MAX_USABLE_ADDRESS_64;
+#endif
+
+  return grub_efi_allocate_pages_real (max_usable_addr,
 				       pages, GRUB_EFI_ALLOCATE_MAX_ADDRESS,
 				       GRUB_EFI_LOADER_DATA);
 }
@@ -434,8 +448,14 @@ filter_memory_map (grub_efi_memory_descriptor_t *memory_map,
 		   grub_efi_uintn_t desc_size,
 		   grub_efi_memory_descriptor_t *memory_map_end)
 {
+  grub_efi_physical_address_t max_usable_addr = GRUB_EFI_MAX_USABLE_ADDRESS;
   grub_efi_memory_descriptor_t *desc;
   grub_efi_memory_descriptor_t *filtered_desc;
+
+#if defined (__x86_64__)
+  if (grub_env_get_bool("mmunlimited", false))
+    max_usable_addr = GRUB_EFI_MAX_USABLE_ADDRESS_64;
+#endif
 
   for (desc = memory_map, filtered_desc = filtered_memory_map;
        desc < memory_map_end;
@@ -443,7 +463,7 @@ filter_memory_map (grub_efi_memory_descriptor_t *memory_map,
     {
       if (desc->type == GRUB_EFI_CONVENTIONAL_MEMORY
 #if 1
-	  && desc->physical_start <= GRUB_EFI_MAX_USABLE_ADDRESS
+	  && desc->physical_start <= max_usable_addr
 #endif
 	  && desc->physical_start + PAGES_TO_BYTES (desc->num_pages) > 0x100000
 	  && desc->num_pages != 0)
@@ -461,9 +481,9 @@ filter_memory_map (grub_efi_memory_descriptor_t *memory_map,
 #if 1
 	  if (BYTES_TO_PAGES (filtered_desc->physical_start)
 	      + filtered_desc->num_pages
-	      > BYTES_TO_PAGES_DOWN (GRUB_EFI_MAX_USABLE_ADDRESS))
+	      > BYTES_TO_PAGES_DOWN (max_usable_addr))
 	    filtered_desc->num_pages
-	      = (BYTES_TO_PAGES_DOWN (GRUB_EFI_MAX_USABLE_ADDRESS)
+	      = (BYTES_TO_PAGES_DOWN (max_usable_addr)
 		 - BYTES_TO_PAGES (filtered_desc->physical_start));
 #endif
 

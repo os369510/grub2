@@ -655,6 +655,10 @@ grub_cmd_linux (grub_command_t cmd __attribute__ ((unused)),
   int i;
   grub_size_t align, min_align;
   int relocatable;
+#if defined (GRUB_MACHINE_EFI)
+  int kernel_can_above_4g = 0;
+  grub_addr_t max_usable_addr = GRUB_LINUX_MAX_ADDR_32;
+#endif
   grub_uint64_t preferred_address = GRUB_LINUX_BZIMAGE_ADDR;
 
   grub_dl_ref (my_mod);
@@ -805,6 +809,8 @@ grub_cmd_linux (grub_command_t cmd __attribute__ ((unused)),
 
   linux_params.ramdisk_image = 0;
   linux_params.ramdisk_size = 0;
+  linux_params.ext_ramdisk_image = 0;
+  linux_params.ext_ramdisk_size = 0;
 
   linux_params.heap_end_ptr = GRUB_LINUX_HEAP_END_OFFSET;
   linux_params.loadflags |= GRUB_LINUX_FLAG_CAN_USE_HEAP;
@@ -825,6 +831,12 @@ grub_cmd_linux (grub_command_t cmd __attribute__ ((unused)),
 
 #ifdef GRUB_MACHINE_EFI
 #ifdef __x86_64__
+  if (grub_le_to_cpu16 (linux_params.version) >= 0x020c)
+    {
+      if (linux_params.xloadflags & LINUX_XLF_CAN_BE_LOADED_ABOVE_4G)
+        kernel_can_above_4g = 1;
+    }
+
   if (grub_le_to_cpu16 (linux_params.version) < 0x0208 &&
       ((grub_addr_t) grub_efi_system_table >> 32) != 0)
     return grub_error(GRUB_ERR_BAD_OS,
@@ -1011,6 +1023,38 @@ grub_cmd_linux (grub_command_t cmd __attribute__ ((unused)),
     grub_error (GRUB_ERR_BAD_OS, N_("premature end of file %s"),
 		argv[0]);
 
+#if defined (GRUB_MACHINE_EFI)
+  /* If user don't want to use memory over 4g. */
+  if (grub_env_get_bool("mmunlimited", false) == false) {
+      max_usable_addr = GRUB_LINUX_MAX_ADDR_32;
+  }
+  /* Else if user wants. */
+  else {
+    /* If kernel supports be allocated over 4g. */
+    if (kernel_can_above_4g == 1) {
+#ifdef __x86_64__
+      /* If machine is 64 bits. */
+      max_usable_addr = GRUB_LINUX_MAX_ADDR_64;
+#else
+      /* The target device doesn't support 4G. */
+      max_usable_addr = GRUB_LINUX_MAX_ADDR_32;
+#endif
+    }
+    /* Kernel doesn't support be loaded over 4G. */
+    else {
+      max_usable_addr = GRUB_LINUX_MAX_ADDR_32;
+    }
+  }
+  grub_dprintf ("linux", "max_usable_addr = 0x%" PRIxGRUB_ADDR "\n",
+		        max_usable_addr);
+  if (prot_mode_mem > (void*) (max_usable_addr - len)) {
+    grub_error (GRUB_ERR_BAD_OS,
+                "Doesn't support load kernel above 0x%lx.",
+                max_usable_addr);
+    goto fail;
+  }
+#endif
+
   if (grub_errno == GRUB_ERR_NONE)
     {
       grub_loader_set (grub_linux_boot, grub_linux_unload,
@@ -1041,6 +1085,7 @@ grub_cmd_initrd (grub_command_t cmd __attribute__ ((unused)),
   grub_addr_t addr;
   grub_err_t err;
   struct grub_linux_initrd_context initrd_ctx = { 0, 0, 0 };
+  int initrd_can_above_4g = 0;
 
   if (argc == 0)
     {
@@ -1060,6 +1105,15 @@ grub_cmd_initrd (grub_command_t cmd __attribute__ ((unused)),
   size = grub_get_initrd_size (&initrd_ctx);
   aligned_size = ALIGN_UP (size, 4096);
 
+#if defined (GRUB_MACHINE_EFI) && defined (__x86_64__)
+  /* Check if initrd can be loaded above 4G */
+  if (grub_le_to_cpu16 (linux_params.version) >= 0x020c)
+    {
+      if (linux_params.xloadflags & LINUX_XLF_CAN_BE_LOADED_ABOVE_4G)
+        initrd_can_above_4g = 1;
+    }
+#endif
+
   /* Get the highest address available for the initrd.  */
   if (grub_le_to_cpu16 (linux_params.version) >= 0x0203)
     {
@@ -1067,9 +1121,32 @@ grub_cmd_initrd (grub_command_t cmd __attribute__ ((unused)),
 
       /* XXX in reality, Linux specifies a bogus value, so
 	 it is necessary to make sure that ADDR_MAX does not exceed
-	 0x3fffffff.  */
-      if (addr_max > GRUB_LINUX_INITRD_MAX_ADDRESS)
-	addr_max = GRUB_LINUX_INITRD_MAX_ADDRESS;
+	 0x3fffffff except users prefer to unlimit it.  */
+      if (grub_env_get_bool("mmunlimited", false) == false)
+	{
+	  if (addr_max > GRUB_LINUX_INITRD_MAX_ADDRESS)
+	    addr_max = GRUB_LINUX_INITRD_MAX_ADDRESS;
+	}
+      /* If user don't want memory allocation be limited. */
+      else
+      {
+        /* Maximum memory shouldn't exceed 4G unless kerenl supports it. */
+        if (initrd_can_above_4g == 0) {
+	      if (addr_max > GRUB_LINUX_MAX_ADDR_32)
+	        addr_max = GRUB_LINUX_MAX_ADDR_32;
+        }
+        /* If initrd can be loaded above 4G. */
+        else {
+#ifdef __x86_64__
+          /* If machine is 64 bits, overwrite initrd_addr_max. */
+          addr_max = GRUB_LINUX_MAX_ADDR_64;
+#else
+          /* The target device doesn't support 4G. */
+          if (addr_max > GRUB_LINUX_MAX_ADDR_32)
+            addr_max = GRUB_LINUX_MAX_ADDR_32;
+#endif
+        }
+      }
     }
   else
     addr_max = GRUB_LINUX_INITRD_MAX_ADDRESS;
@@ -1085,8 +1162,28 @@ grub_cmd_initrd (grub_command_t cmd __attribute__ ((unused)),
 
   addr_min = (grub_addr_t) prot_mode_target + prot_init_space;
 
+  if (addr_max < aligned_size)
+    {
+      grub_error (GRUB_ERR_OUT_OF_RANGE,
+                  "the size of initrd is bigger than addr_max.\n");
+      goto fail;
+    }
+
   /* Put the initrd as high as possible, 4KiB aligned.  */
-  addr = (addr_max - aligned_size) & ~0xFFF;
+  addr = (addr_max - aligned_size) & (grub_addr_t) ~0xFFF;
+
+  grub_dprintf ("linux",
+                "Initrd at addr 0x%" PRIxGRUB_ADDR " which is expected in"
+                " ranger 0x%" PRIxGRUB_ADDR	" ~ 0x%" PRIxGRUB_ADDR "\n",
+                addr, addr_min, addr_max);
+
+  /* If kernel doesn't support memory be allocated over 4G. */
+  if (initrd_can_above_4g == 0 &&
+      addr > GRUB_LINUX_MAX_ADDR_32) {
+      grub_error (GRUB_ERR_OUT_OF_RANGE,
+                  "the addr is over 4G but unsupported.");
+      goto fail;
+  }
 
   if (addr < addr_min)
     {
@@ -1113,9 +1210,13 @@ grub_cmd_initrd (grub_command_t cmd __attribute__ ((unused)),
   grub_dprintf ("linux", "Initrd, addr=0x%x, size=0x%x\n",
 		(unsigned) addr, (unsigned) size);
 
-  linux_params.ramdisk_image = initrd_mem_target;
-  linux_params.ramdisk_size = size;
+  linux_params.ramdisk_image = GRUB_LINUX_ADDR_LOW_U32(initrd_mem_target);
+  linux_params.ramdisk_size = GRUB_LINUX_SIZE_LOW_U32(size);
   linux_params.root_dev = 0x0100; /* XXX */
+#ifdef __x86_64__
+  linux_params.ext_ramdisk_image = GRUB_LINUX_ADDR_HIGH_U32(initrd_mem_target);
+  linux_params.ext_ramdisk_size = GRUB_LINUX_SIZE_HIGH_U32(size);
+#endif
 
  fail:
   grub_initrd_close (&initrd_ctx);

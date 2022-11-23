@@ -48,16 +48,33 @@
 #define VIDEO_CAPABILITY_SKIP_QUIRKS	(1 << 0)
 #define VIDEO_CAPABILITY_64BIT_BASE	(1 << 1)	/* Frame buffer base is 64-bit. */
 
+#define GRUB_LINUX_ADDR_LOW_U32(addr)	\
+	((grub_uint32_t)(((grub_addr_t)addr) & 0xffffffffull))
+#ifdef __x86_64__
+#define GRUB_LINUX_ADDR_HIGH_U32(addr)	\
+	((grub_uint32_t)((((grub_addr_t)addr) >> 32) & 0xffffffffull))
+#endif
+
+#define GRUB_LINUX_SIZE_LOW_U32(addr)	\
+	((grub_uint32_t)(((grub_size_t)size) & 0xffffffffull))
+#ifdef __x86_64__
+#define GRUB_LINUX_SIZE_HIGH_U32(addr)	\
+	((grub_uint32_t)((((grub_size_t)size) >> 32) & 0xffffffffull))
+#endif
+
 /* Maximum number of MBR signatures to store. */
 #define EDD_MBR_SIG_MAX			16
 
 #ifdef __x86_64__
 
+#define GRUB_LINUX_MAX_ADDR_32	    0xffffffff
+#define GRUB_LINUX_MAX_ADDR_64       0xffffffffffffull
 #define GRUB_LINUX_EFI_SIGNATURE	\
   ('4' << 24 | '6' << 16 | 'L' << 8 | 'E')
 
 #else
 
+#define GRUB_LINUX_MAX_ADDR_32	    0xffffffff
 #define GRUB_LINUX_EFI_SIGNATURE	\
   ('2' << 24 | '3' << 16 | 'L' << 8 | 'E')
 
