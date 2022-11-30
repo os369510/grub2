@@ -569,6 +569,8 @@ typedef grub_uint32_t grub_efi_uint32_t;
 #define PRIuGRUB_EFI_UINT32_T	PRIuGRUB_UINT32_T
 typedef grub_int64_t grub_efi_int64_t;
 typedef grub_uint64_t grub_efi_uint64_t;
+#define PRIxGRUB_EFI_UINT64_T	PRIxGRUB_UINT64_T
+#define PRIuGRUB_EFI_UINT64_T	PRIuGRUB_UINT64_T
 typedef grub_uint8_t grub_efi_char8_t;
 typedef grub_uint16_t grub_efi_char16_t;
 
